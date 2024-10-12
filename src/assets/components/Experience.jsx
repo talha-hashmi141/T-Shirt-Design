@@ -1,4 +1,4 @@
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { useLoader } from '@react-three/fiber';
 import React, { useEffect } from 'react';
@@ -6,8 +6,8 @@ import { TextureLoader } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const Experience = () => {
-  const model = useLoader(GLTFLoader, "./burger_box.glb"); 
-  const colorMap = useLoader(TextureLoader, './Fabric008_2K-PNG/Patterns-02.webp');
+  const model = useLoader(GLTFLoader, './burger_box.glb');
+  const colorMap = useLoader(TextureLoader, './Pattern-02.jpg');
 
   // Apply texture to the model after loading
   useEffect(() => {
@@ -20,17 +20,18 @@ const Experience = () => {
         child.material.map.offset.set(2, 2); // Adjust offset if the texture is misplaced
         child.material.needsUpdate = true; // Update the material
       }
-    });0
+    });
   }, [model, colorMap]);
 
   return (
     <>
       <mesh>
-        <ambientLight intensity={2} />
-        {/* <directionalLight intensity={10} position={[-0.1,-0.1,-1.8]} /> */}
+        {/* Remove ambientLight and directionalLight */}
         <primitive object={model.scene} scale={8} />
         <OrbitControls />
       </mesh>
+      {/* Add environment light */}
+      <Environment preset="sunset" background={true} /> {/* or choose another preset like 'studio', 'forest' */}
     </>
   );
 }
