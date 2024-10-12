@@ -27,6 +27,11 @@ const Experience = () => {
     <>
       <mesh>
         {/* Remove ambientLight and directionalLight */}
+        <directionalLight intensity={1} position={[-0.1,-0.1,-5]} /> 
+        <mesh position={[-0.1,-0.1,-5]} >
+          <boxGeometry/>
+          <meshBasicMaterial/>
+        </mesh>
         <primitive object={model.scene} scale={8} />
         <OrbitControls />
       </mesh>
