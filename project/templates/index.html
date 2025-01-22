@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Shirt Design Generator</title>
+</head>
+<body>
+    <h1>T-Shirt Design Generator</h1>
+    <form method="POST" action="/" enctype="multipart/form-data">
+        <label for="prompt">Enter a text prompt:</label><br>
+        <input type="text" id="prompt" name="prompt" required><br><br>
+        <button type="submit">Generate Image</button>
+    </form>
+    <hr>
+    {% if image_url %}
+        <h3>Generated Image:</h3>
+        <img src="{{ image_url }}" alt="Generated Image" style="max-width: 100%; height: auto;">
+    {% endif %}
+</body>
+</html>
