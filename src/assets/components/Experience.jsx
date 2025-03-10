@@ -6,6 +6,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import SideMenu from './SideMenu'; // Import SideMenu
+import Settings from './Settings';
+import { FaCog } from 'react-icons/fa'; // Install react-icons if not already installed
+import SizeSelector from './SizeSelector';
+import Checkout from './Checkout';
 
 const Experience = ({ setToken }) => {
   const navigate = useNavigate();
@@ -23,6 +27,12 @@ const Experience = ({ setToken }) => {
   const [repeatY, setRepeatY] = useState(2);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSizeSelector, setShowSizeSelector] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [sizeData, setSizeData] = useState(null);
+  const [designImage, setDesignImage] = useState(null);
 
   const resetValues = () => {
     setRepeatX(2);
@@ -77,17 +87,71 @@ const Experience = ({ setToken }) => {
     navigate('/login');
   };
 
+  const captureDesign = () => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const image = canvas.toDataURL('image/png');
+      setDesignImage(image);
+    }
+  };
+
+  const handleSizeSubmit = (data) => {
+    setSizeData(data);
+    captureDesign();
+    setShowSizeSelector(false);
+    setShowCheckout(true);
+  };
+
   return (
     <>
-      {/* Logout Button */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Top Bar */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-4">
+        <button
+          onClick={() => setShowSettings(true)}
+          className="bg-black text-white p-2 rounded-lg hover:bg-gray-800"
+          title="Settings"
+        >
+          <FaCog size={20} />
+        </button>
         <button
           onClick={handleLogout}
-          className="bg-black text-white p-2 px-3 rounded-lg hover:bg-red-600 "
+          className="bg-black text-white p-2 px-3 rounded-lg hover:bg-red-600"
         >
           Logout
         </button>
       </div>
+
+      {/* Add Next button */}
+      <div className="absolute bottom-4 right-4 z-50">
+        <button
+          onClick={() => setShowSizeSelector(true)}
+          className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800"
+        >
+          Next
+        </button>
+      </div>
+
+      {/* Settings Modal */}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+
+      {/* Modals */}
+      {showSizeSelector && (
+        <SizeSelector 
+          onClose={() => setShowSizeSelector(false)}
+          onNext={handleSizeSubmit}
+        />
+      )}
+      {showCheckout && (
+        <Checkout
+          onClose={() => {
+            setShowCheckout(false);
+            setSizeData(null);
+            setDesignImage(null);
+          }}
+          sizeData={sizeData}
+          designImage={designImage}
+        />
+      )}
 
       <SideMenu
         setSelectedPattern={setSelectedPattern}
@@ -112,10 +176,7 @@ const Experience = ({ setToken }) => {
       <Canvas className="bg-[#000000dc]">
         <Stage environment={null} intensity={1} preset="rembrandt" shadows>
           <Float>
-
-          <primitive object={model.scene}
-          //  scale={0.5} position={[0.4, -1, 0]}
-          />
+            <primitive object={model.scene} />
           </Float>
         </Stage>
         <OrbitControls />

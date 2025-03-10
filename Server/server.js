@@ -4,15 +4,18 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const authRoutes = require("./routes/authRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
 dotenv.config(); // Load environment variables
 
 const app = express();
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
 app.use("/api/auth", authRoutes);
+app.use("/api", orderRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

@@ -5,7 +5,7 @@ import { useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from '@react-three/drei';
 import { Link, useNavigate } from 'react-router-dom';
-import API from '../../Api';
+import { AUTH_API } from '../../Api';
 import { loginSchema } from '../../validationSchemas';
 
 const Login = ({ setToken }) => {
@@ -15,7 +15,7 @@ const Login = ({ setToken }) => {
 
   const handleLogin = async (values, { setSubmitting }) => {
     try {
-      const { data } = await API.post('/login', values);
+      const { data } = await AUTH_API.post('/login', values);
       localStorage.setItem('token', data.token);
       setToken(data.token);
       navigate('/profile');
@@ -68,9 +68,14 @@ const Login = ({ setToken }) => {
             )}
           </Formik>
           {loginError && <div className="mt-4 text-red-500">{loginError}</div>}
-          <Link to="/signup" className="mt-4 text-blue-500 hover:underline">
-            Don't have an account? Sign up
-          </Link>
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <Link to="/signup" className="text-blue-500 hover:underline">
+              Don't have an account? Sign up
+            </Link>
+            <Link to="/forgot-password" className="text-blue-500 hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
         </div>
       </div>
 

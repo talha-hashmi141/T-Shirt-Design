@@ -5,7 +5,7 @@ import { useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from '@react-three/drei';
 import { Link, useNavigate } from 'react-router-dom';
-import API from '../../Api';
+import { AUTH_API } from '../../Api';
 import { signupSchema } from '../../validationSchemas';
 
 const Signup = () => {
@@ -15,10 +15,14 @@ const Signup = () => {
 
   const handleSignup = async (values, { setSubmitting }) => {
     try {
-      await API.post('/signup', values);
+      await AUTH_API.post('/signup', values);
       navigate('/login');
     } catch (err) {
-      setSignupError('Error signing up. Please try again.');
+      console.error('Signup error:', err);
+      setSignupError(
+        err.response?.data?.error || 
+        'Error signing up. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }
