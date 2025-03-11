@@ -1,9 +1,6 @@
 const express = require("express");
 const Order = require("../models/Order");
-const User = require("../models/User");
 const nodemailer = require("nodemailer");
-const authMiddleware = require("../middlewares/authMiddleware");
-
 const router = express.Router();
 
 // Generate order number
@@ -17,13 +14,13 @@ router.get("/test", (req, res) => {
 });
 
 // Create order
-router.post("/orders", authMiddleware, async (req, res) => {
+router.post("/orders", async (req, res) => {
   try {
     console.log('Received order request:', req.body);
-    console.log('User ID from token:', req.user);
     
     const {
       fullName,
+      email,
       phone,
       deliveryMethod,
       address,
@@ -32,23 +29,24 @@ router.post("/orders", authMiddleware, async (req, res) => {
       designImage
     } = req.body;
 
-    const user = await User.findById(req.user);
     const orderNumber = generateOrderNumber();
 
+    // Create new order without userId
     const order = new Order({
       orderNumber,
-      userId: req.user,
       fullName,
-      email: user.email,
+      email,
       phone,
       deliveryMethod,
-      address,
+      address: deliveryMethod === 'delivery' ? address : '',
       sizeData,
       totalPrice,
-      designImage
+      designImage,
+      status: 'pending'
     });
 
     await order.save();
+    console.log('Order saved successfully:', orderNumber);
 
     // Create email transporter
     const transporter = nodemailer.createTransport({
@@ -61,7 +59,7 @@ router.post("/orders", authMiddleware, async (req, res) => {
 
     // Send confirmation email
     await transporter.sendMail({
-      to: user.email,
+      to: email,
       subject: `Order Confirmation - ${orderNumber}`,
       html: `
         <h1>Order Confirmation</h1>
@@ -88,6 +86,7 @@ router.post("/orders", authMiddleware, async (req, res) => {
       orderNumber 
     });
   } catch (error) {
+    console.error('Order error:', error);
     res.status(500).json({ error: error.message });
   }
 });

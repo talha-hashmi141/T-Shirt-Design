@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import API, { AUTH_API } from '../../Api';
+import API from '../../Api';
 import OrderConfirmation from './OrderConfirmation';
-import { useNavigate } from 'react-router-dom';
 
 const checkoutSchema = Yup.object().shape({
   fullName: Yup.string().required('Full name is required'),
+  email: Yup.string().email('Invalid email').required('Email is required'),
   phone: Yup.string().required('Phone number is required'),
   deliveryMethod: Yup.string().required('Please select a delivery method'),
   address: Yup.string().when('deliveryMethod', {
@@ -17,60 +17,22 @@ const checkoutSchema = Yup.object().shape({
 });
 
 const Checkout = ({ onClose, sizeData, designImage }) => {
-  const navigate = useNavigate();
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [orderNumber, setOrderNumber] = useState(null);
   const [error, setError] = useState('');
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const totalItems = Object.values(sizeData).reduce((sum, num) => sum + Number(num), 0);
-  const totalPrice = totalItems * 25; // Price per shirt is $25
-
-  // Fetch user data including delivery info
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const { data } = await AUTH_API.get('/profile');
-        setUserData(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError('Failed to load user data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+  const totalPrice = totalItems * 25;
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setError('');
 
-      // Save delivery info first
-      try {
-        await AUTH_API.put('/update-profile', {
-          deliveryInfo: {
-            fullName: values.fullName,
-            phone: values.phone,
-            address: values.address,
-            defaultDeliveryMethod: values.deliveryMethod
-          }
-        });
-      } catch (error) {
-        console.error('Failed to save delivery info:', error);
-      }
-
-      // Place the order
       const orderData = {
-        fullName: values.fullName,
-        phone: values.phone,
-        deliveryMethod: values.deliveryMethod,
-        address: values.deliveryMethod === 'delivery' ? values.address : '',
+        ...values,
         sizeData,
         totalPrice,
-        designImage: designImage
+        designImage
       };
 
       const response = await API.post('/orders', orderData);
@@ -88,16 +50,6 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
       setSubmitting(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div className="bg-white rounded-lg p-8">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (showConfirmation) {
     return (
@@ -163,14 +115,14 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
             <h3 className="text-xl font-semibold mb-4">Delivery Details</h3>
             <Formik
               initialValues={{
-                fullName: userData?.deliveryInfo?.fullName || '',
-                phone: userData?.deliveryInfo?.phone || '',
-                address: userData?.deliveryInfo?.address || '',
-                deliveryMethod: userData?.deliveryInfo?.defaultDeliveryMethod || 'delivery'
+                fullName: '',
+                email: '',
+                phone: '',
+                address: '',
+                deliveryMethod: 'delivery'
               }}
               validationSchema={checkoutSchema}
               onSubmit={handleSubmit}
-              enableReinitialize
             >
               {({ values, isSubmitting }) => (
                 <Form className="space-y-4">
@@ -183,6 +135,18 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
                       className="w-full p-3 border border-gray-300 rounded-lg"
                     />
                     <ErrorMessage name="fullName" component="div" className="text-red-500 mt-1" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <Field
+                      name="email"
+                      type="email"
+                      className="w-full p-3 border border-gray-300 rounded-lg"
+                    />
+                    <ErrorMessage name="email" component="div" className="text-red-500 mt-1" />
                   </div>
 
                   <div>
