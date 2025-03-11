@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import API from '../../Api';
+import API, { AUTH_API } from '../../Api';
 import OrderConfirmation from './OrderConfirmation';
+import { useNavigate } from 'react-router-dom';
 
 const checkoutSchema = Yup.object().shape({
   fullName: Yup.string().required('Full name is required'),
-  email: Yup.string().email('Invalid email').required('Email is required'),
   phone: Yup.string().required('Phone number is required'),
-  deliveryMethod: Yup.string().required('Please select a delivery method'),
+  deliveryMethod: Yup.string().required('Delivery method is required'),
   address: Yup.string().when('deliveryMethod', {
-    is: (val) => val === 'delivery',
-    then: () => Yup.string().required('Address is required'),
+    is: 'delivery',
+    then: () => Yup.string().required('Address is required for delivery'),
     otherwise: () => Yup.string()
   })
 });
@@ -20,36 +20,102 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [orderNumber, setOrderNumber] = useState(null);
   const [error, setError] = useState('');
+  const [userInfo, setUserInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const totalItems = Object.values(sizeData).reduce((sum, num) => sum + Number(num), 0);
   const totalPrice = totalItems * 25;
 
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const { data } = await AUTH_API.get('/profile');
+        if (data) {
+          setUserInfo({
+            email: data.email,
+            ...data.deliveryInfo
+          });
+          // Only clear error if we successfully got user data
+          setError('');
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+        if (error.response?.status === 401) {
+          navigate('/login');
+        } else {
+          setError('Failed to load user information. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, [navigate]);
+
   const handleSubmit = async (values, { setSubmitting }) => {
+    setError('');
     try {
-      setError('');
+      if (!userInfo || !userInfo.email) {
+        throw new Error('User information is missing');
+      }
 
       const orderData = {
         ...values,
+        email: userInfo.email,
         sizeData,
         totalPrice,
         designImage
       };
 
-      const response = await API.post('/orders', orderData);
-
-      if (response.data && response.data.orderNumber) {
-        setOrderNumber(response.data.orderNumber);
+      const { data } = await API.post('/orders', orderData);
+      
+      if (data.orderNumber) {
+        setOrderNumber(data.orderNumber);
         setShowConfirmation(true);
       } else {
-        throw new Error('Order placement failed');
+        throw new Error('No order number received');
       }
-    } catch (error) {
-      console.error('Order error:', error);
-      setError(error.response?.data?.error || 'Failed to place order. Please try again.');
+    } catch (err) {
+      console.error('Order error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg p-8">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userInfo && !loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg p-8">
+          <p>Unable to load user information. Please try again later.</p>
+          <button
+            onClick={onClose}
+            className="mt-4 w-full p-3 bg-black text-white rounded-lg hover:bg-gray-800"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (showConfirmation) {
     return (
@@ -113,18 +179,24 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
           {/* Right side - Delivery Details */}
           <div>
             <h3 className="text-xl font-semibold mb-4">Delivery Details</h3>
+            
+            <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <p className="mt-1 text-gray-900">{userInfo?.email}</p>
+            </div>
+
             <Formik
               initialValues={{
-                fullName: '',
-                email: '',
-                phone: '',
-                address: '',
-                deliveryMethod: 'delivery'
+                fullName: userInfo?.fullName || '',
+                phone: userInfo?.phone || '',
+                deliveryMethod: userInfo?.defaultDeliveryMethod || 'delivery',
+                address: userInfo?.address || ''
               }}
               validationSchema={checkoutSchema}
               onSubmit={handleSubmit}
+              enableReinitialize
             >
-              {({ values, isSubmitting }) => (
+              {({ isSubmitting, values }) => (
                 <Form className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -135,18 +207,6 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
                       className="w-full p-3 border border-gray-300 rounded-lg"
                     />
                     <ErrorMessage name="fullName" component="div" className="text-red-500 mt-1" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <Field
-                      name="email"
-                      type="email"
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                    />
-                    <ErrorMessage name="email" component="div" className="text-red-500 mt-1" />
                   </div>
 
                   <div>
@@ -180,8 +240,8 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
                         Delivery Address
                       </label>
                       <Field
-                        as="textarea"
                         name="address"
+                        as="textarea"
                         className="w-full p-3 border border-gray-300 rounded-lg"
                         rows="3"
                       />

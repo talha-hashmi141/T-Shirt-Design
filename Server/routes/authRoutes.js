@@ -37,14 +37,12 @@ router.post("/login", async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
 
-    // Generate token with shorter expiration
     const token = jwt.sign(
       { id: user._id },
       JWT_SECRET,
-      { expiresIn: "24h" } // Increased from 1h to 24h for better user experience
+      { expiresIn: "24h" }
     );
 
-    // Send token with Bearer prefix
     res.json({ 
       token: `Bearer ${token}`,
       user: {
@@ -69,26 +67,24 @@ router.post("/login", async (req, res) => {
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
     console.log('Fetching profile for user ID:', req.user);
-    const user = await User.findById(req.user).select("-password");
+    const user = await User.findById(req.user);
     
     if (!user) {
       console.log('User not found for ID:', req.user);
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Ensure deliveryInfo exists
-    if (!user.deliveryInfo) {
-      user.deliveryInfo = {
+    // Return user data without sensitive information
+    res.json({
+      email: user.email,
+      username: user.username,
+      deliveryInfo: user.deliveryInfo || {
         fullName: '',
         phone: '',
         address: '',
         defaultDeliveryMethod: 'delivery'
-      };
-      await user.save();
-    }
-
-    console.log('User profile fetched successfully');
-    res.json(user);
+      }
+    });
   } catch (error) {
     console.error('Profile route error:', error);
     res.status(500).json({ error: "Error fetching user profile" });
@@ -189,10 +185,6 @@ router.put("/update-profile", authMiddleware, async (req, res) => {
     }
 
     const {
-      username,
-      email,
-      currentPassword,
-      newPassword,
       fullName,
       phone,
       address,
@@ -201,28 +193,19 @@ router.put("/update-profile", authMiddleware, async (req, res) => {
 
     // Update delivery info
     user.deliveryInfo = {
-      fullName: fullName || user.deliveryInfo?.fullName,
-      phone: phone || user.deliveryInfo?.phone,
-      address: address || user.deliveryInfo?.address,
-      defaultDeliveryMethod: defaultDeliveryMethod || user.deliveryInfo?.defaultDeliveryMethod
+      fullName: fullName || user.deliveryInfo?.fullName || '',
+      phone: phone || user.deliveryInfo?.phone || '',
+      address: address || user.deliveryInfo?.address || '',
+      defaultDeliveryMethod: defaultDeliveryMethod || user.deliveryInfo?.defaultDeliveryMethod || 'delivery'
     };
 
-    // Update other fields
-    if (username) user.username = username;
-    if (email) user.email = email;
-
-    // Handle password change
-    if (currentPassword && newPassword) {
-      const isMatch = await user.comparePassword(currentPassword);
-      if (!isMatch) {
-        return res.status(401).json({ error: "Current password is incorrect" });
-      }
-      user.password = newPassword;
-    }
-
     await user.save();
-    res.json({ message: "Profile updated successfully" });
+    res.json({ 
+      message: "Profile updated successfully",
+      deliveryInfo: user.deliveryInfo
+    });
   } catch (error) {
+    console.error('Update profile error:', error);
     res.status(500).json({ error: error.message });
   }
 });
