@@ -5,50 +5,49 @@ const API = axios.create({ baseURL: 'http://localhost:5000/api' });
 const AUTH_API = axios.create({ baseURL: 'http://localhost:5000/api/auth' });
 
 // Add request interceptors
-API.interceptors.request.use((config) => {
+const requestInterceptor = (config) => {
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    // Ensure token is properly formatted
+    config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+};
 
-AUTH_API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
+const requestErrorHandler = (error) => {
+  console.error('Request Error:', error);
   return Promise.reject(error);
-});
+};
 
-// Add response interceptors
-const handleAuthError = (error) => {
-  // Only handle specific auth errors that require logout
-  if (error.response?.status === 401 && 
-      (error.response.data.error === "Invalid token" || 
-       error.response.data.error === "Token expired" ||
-       error.response.data.error === "Access denied. No token provided.")) {
-    // Check if we're not already on the login page to prevent redirect loops
-    if (!window.location.pathname.includes('/login')) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+API.interceptors.request.use(requestInterceptor, requestErrorHandler);
+AUTH_API.interceptors.request.use(requestInterceptor, requestErrorHandler);
+
+// Response interceptors
+const responseInterceptor = (response) => {
+  return response;
+};
+
+const errorInterceptor = (error) => {
+  if (error.response) {
+    // Handle token related errors
+    if (error.response.status === 401) {
+      const errorMessage = error.response.data?.error;
+      if (errorMessage === 'Token expired' || errorMessage === 'Invalid token') {
+        // Clear invalid token
+        localStorage.removeItem('token');
+      }
     }
+    
+    console.error('API Error Response:', {
+      status: error.response.status,
+      data: error.response.data,
+      headers: error.response.headers
+    });
   }
   return Promise.reject(error);
 };
 
-API.interceptors.response.use(
-  (response) => response,
-  handleAuthError
-);
-
-AUTH_API.interceptors.response.use(
-  (response) => response,
-  handleAuthError
-);
+API.interceptors.response.use(responseInterceptor, errorInterceptor);
+AUTH_API.interceptors.response.use(responseInterceptor, errorInterceptor);
 
 export { API as default, AUTH_API };

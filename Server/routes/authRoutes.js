@@ -37,17 +37,30 @@ router.post("/login", async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+    // Generate token with shorter expiration
+    const token = jwt.sign(
+      { id: user._id },
+      JWT_SECRET,
+      { expiresIn: "24h" } // Increased from 1h to 24h for better user experience
+    );
+
+    // Send token with Bearer prefix
     res.json({ 
-      token,
+      token: `Bearer ${token}`,
       user: {
         id: user._id,
         email: user.email,
         username: user.username,
-        deliveryInfo: user.deliveryInfo
+        deliveryInfo: user.deliveryInfo || {
+          fullName: '',
+          phone: '',
+          address: '',
+          defaultDeliveryMethod: 'delivery'
+        }
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -55,13 +68,30 @@ router.post("/login", async (req, res) => {
 // Profile Route
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
+    console.log('Fetching profile for user ID:', req.user);
     const user = await User.findById(req.user).select("-password");
+    
     if (!user) {
+      console.log('User not found for ID:', req.user);
       return res.status(404).json({ error: "User not found" });
     }
+
+    // Ensure deliveryInfo exists
+    if (!user.deliveryInfo) {
+      user.deliveryInfo = {
+        fullName: '',
+        phone: '',
+        address: '',
+        defaultDeliveryMethod: 'delivery'
+      };
+      await user.save();
+    }
+
+    console.log('User profile fetched successfully');
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Profile route error:', error);
+    res.status(500).json({ error: "Error fetching user profile" });
   }
 });
 

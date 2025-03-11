@@ -1,21 +1,38 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.header('Authorization');
+    // Get token from header and clean it
+    let token = req.header('Authorization');
+    
+    // Check if token exists
     if (!token) {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    // Remove 'Bearer ' if present
-    const tokenString = token.startsWith('Bearer ') ? token.slice(7) : token;
+    // Remove Bearer if present
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7);
+    }
 
-    const verified = jwt.verify(tokenString, JWT_SECRET);
-    req.user = verified.id;
-    next();
+    // Verify token
+    try {
+      const verified = jwt.verify(token, JWT_SECRET);
+      req.user = verified.id;
+      next();
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired' });
+      }
+      if (err.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      throw err;
+    }
   } catch (err) {
-    res.status(401).json({ error: 'Invalid token' });
+    console.error('Auth middleware error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 

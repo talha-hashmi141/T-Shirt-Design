@@ -29,37 +29,20 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
 
   // Fetch user data including delivery info
   useEffect(() => {
-    let mounted = true;
-
     const fetchUserData = async () => {
       try {
         const { data } = await AUTH_API.get('/profile');
-        if (mounted) {
-          setUserData(data);
-          setLoading(false);
-        }
+        setUserData(data);
       } catch (error) {
         console.error('Error fetching user data:', error);
-        if (mounted) {
-          if (error.response?.status === 401) {
-            // Only redirect if we're not already on the login page
-            if (!window.location.pathname.includes('/login')) {
-              navigate('/login');
-            }
-          } else {
-            setError('Failed to load user data. Please try again.');
-            setLoading(false);
-          }
-        }
+        setError('Failed to load user data. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchUserData();
-
-    return () => {
-      mounted = false;
-    };
-  }, [navigate]);
+  }, []);
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
@@ -100,11 +83,7 @@ const Checkout = ({ onClose, sizeData, designImage }) => {
       }
     } catch (error) {
       console.error('Order error:', error);
-      if (error.response?.status === 401) {
-        setError('Your session has expired. Please login again.');
-      } else {
-        setError(error.response?.data?.error || 'Failed to place order. Please try again.');
-      }
+      setError(error.response?.data?.error || 'Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
