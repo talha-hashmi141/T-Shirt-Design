@@ -49,6 +49,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         email: user.email,
         username: user.username,
+        isAdmin: user.isAdmin,
         deliveryInfo: user.deliveryInfo || {
           fullName: '',
           phone: '',
@@ -78,6 +79,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
     res.json({
       email: user.email,
       username: user.username,
+      isAdmin: user.isAdmin,
       deliveryInfo: user.deliveryInfo || {
         fullName: '',
         phone: '',

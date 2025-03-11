@@ -16,10 +16,21 @@ const Login = ({ setToken }) => {
   const handleLogin = async (values, { setSubmitting }) => {
     try {
       const { data } = await AUTH_API.post('/login', values);
+      console.log('Login response:', data); // Debug log
+
       localStorage.setItem('token', data.token);
+      localStorage.setItem('isAdmin', data.user.isAdmin); // Store admin status
       setToken(data.token);
-      navigate('/profile');
+      
+      if (data.user.isAdmin) {
+        console.log('User is admin, redirecting to admin dashboard'); // Debug log
+        navigate('/admin');
+      } else {
+        console.log('User is not admin, redirecting to profile'); // Debug log
+        navigate('/profile');
+      }
     } catch (err) {
+      console.error('Login error:', err); // Debug log
       setLoginError('Invalid credentials. Please try again.');
     } finally {
       setSubmitting(false);
