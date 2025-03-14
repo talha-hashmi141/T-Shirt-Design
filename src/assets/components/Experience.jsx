@@ -83,6 +83,7 @@ const Experience = ({ setToken }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('isAdmin');
     setToken(null);
     navigate('/login');
   };
@@ -175,9 +176,8 @@ const Experience = ({ setToken }) => {
 
       <Canvas className="bg-[#000000dc]">
         <Stage environment={null} intensity={1} preset="rembrandt" shadows>
-          <Float>
+
             <primitive object={model.scene} />
-          </Float>
         </Stage>
         <OrbitControls />
         <Environment preset="city" backgroundBlurriness={10} background={false} />

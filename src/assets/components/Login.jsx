@@ -8,7 +8,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AUTH_API } from '../../Api';
 import { loginSchema } from '../../validationSchemas';
 
-const Login = ({ setToken }) => {
+const Login = ({ setAuthStatus }) => {
   const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
   const model = useLoader(GLTFLoader, './burger_box.glb');
@@ -16,21 +16,19 @@ const Login = ({ setToken }) => {
   const handleLogin = async (values, { setSubmitting }) => {
     try {
       const { data } = await AUTH_API.post('/login', values);
-      console.log('Login response:', data); // Debug log
+      console.log('Login response:', data);
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('isAdmin', data.user.isAdmin); // Store admin status
-      setToken(data.token);
+      setAuthStatus(data.token, data.user.isAdmin);
       
       if (data.user.isAdmin) {
-        console.log('User is admin, redirecting to admin dashboard'); // Debug log
+        console.log('User is admin, redirecting to admin dashboard');
         navigate('/admin');
       } else {
-        console.log('User is not admin, redirecting to profile'); // Debug log
+        console.log('User is not admin, redirecting to profile');
         navigate('/profile');
       }
     } catch (err) {
-      console.error('Login error:', err); // Debug log
+      console.error('Login error:', err);
       setLoginError('Invalid credentials. Please try again.');
     } finally {
       setSubmitting(false);

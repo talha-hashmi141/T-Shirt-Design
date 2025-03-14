@@ -14,21 +14,31 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true');
   const [loading, setLoading] = useState(true);
 
+  const updateAuthStatus = (newToken, adminStatus) => {
+    setToken(newToken);
+    setIsAdmin(adminStatus);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('isAdmin', adminStatus);
+  };
+
   useEffect(() => {
     const checkAdminStatus = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
-        setToken(storedToken);
         try {
           const { data } = await AUTH_API.get('/profile');
-          console.log('Profile response:', data); // Debug log
           setIsAdmin(data.isAdmin);
           localStorage.setItem('isAdmin', data.isAdmin);
         } catch (error) {
           console.error('Error checking admin status:', error);
           setIsAdmin(false);
           localStorage.removeItem('isAdmin');
+          localStorage.removeItem('token');
+          setToken(null);
         }
+      } else {
+        setIsAdmin(false);
+        localStorage.removeItem('isAdmin');
       }
       setLoading(false);
     };
@@ -47,7 +57,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route 
             path="/login" 
-            element={<Login setToken={setToken} />} 
+            element={<Login setAuthStatus={updateAuthStatus} />} 
           />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -59,13 +69,13 @@ function App() {
             path="/admin" 
             element={
               token && isAdmin ? (
-                <AdminDashboard />
+                <AdminDashboard setToken={setToken} />
               ) : (
                 <Navigate to={token ? "/profile" : "/login"} />
               )
             } 
           />
-          <Route path="/" element={<Navigate to={isAdmin ? "/admin" : "/login"} />} />
+          <Route path="/" element={<Navigate to={token ? (isAdmin ? "/admin" : "/profile") : "/login"} />} />
         </Routes>
       </div>
     </Router>

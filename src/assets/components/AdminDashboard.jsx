@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../Api';
 import {
@@ -23,7 +23,7 @@ ChartJS.register(
   Legend
 );
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ setToken }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [orders, setOrders] = useState([]);
@@ -34,16 +34,26 @@ const AdminDashboard = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Wait for 500ms after last keystroke
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchData();
-  }, [page, statusFilter, searchTerm]);
+  }, [page, statusFilter, debouncedSearchTerm]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [ordersRes, statsRes] = await Promise.all([
-        API.get(`/admin/orders?page=${page}&status=${statusFilter}&search=${searchTerm}`),
+        API.get(`/admin/orders?page=${page}&status=${statusFilter}&search=${debouncedSearchTerm}`),
         API.get('/admin/statistics')
       ]);
 
@@ -70,6 +80,13 @@ const AdminDashboard = () => {
       console.error('Error updating order status:', err);
       setError('Failed to update order status');
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('isAdmin');
+    setToken(null);
+    navigate('/login');
   };
 
   const renderOverview = () => {
@@ -228,8 +245,14 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-black text-white p-4">
-        <div className="container mx-auto">
+        <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
+            Logout
+          </button>
         </div>
       </nav>
 

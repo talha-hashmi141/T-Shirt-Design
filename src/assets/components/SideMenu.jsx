@@ -123,6 +123,7 @@ const SideMenu = ({
       >
         Reset
       </button>
+      
       <h3 className="text-lg font-semibold mb-3">Upload Pattern</h3>
       <input
         type="file"
