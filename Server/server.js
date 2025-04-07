@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/authRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const imageGenerationRoutes = require('./routes/imageGenerationRoutes');
 
 dotenv.config(); // Load environment variables
 
@@ -18,6 +19,7 @@ app.use(cors());
 app.use("/api/auth", authRoutes);
 app.use("/api", orderRoutes);
 app.use("/api/admin", adminRoutes);
+app.use('/api', imageGenerationRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

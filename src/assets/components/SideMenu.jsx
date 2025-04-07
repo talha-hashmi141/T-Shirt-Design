@@ -1,4 +1,5 @@
 import React from 'react';
+import AIPromptGenerator from './AIPromptGenerator';
 
 const SideMenu = ({
   setSelectedPattern,
@@ -19,8 +20,24 @@ const SideMenu = ({
   selectedColor,
   setSelectedColor
 }) => {
+  const handleAIGenerate = (imageUrl) => {
+    // Create a texture from the generated image
+    const texture = new THREE.TextureLoader().load(imageUrl);
+    setSelectedPattern(texture);
+    setUseColor(false);
+  };
+
   return (
-    <div className="absolute top-28 left-5 z-10 p-5 bg-gray-100/60 rounded-lg w-96 shadow-lg">
+    <div className="absolute top-3 left-5 z-10 p-5 bg-gray-100/60 rounded-lg w-96 shadow-lg">
+      <h3 className="text-lg font-semibold mb-3">Pattern Settings</h3>
+
+      {/* AI Pattern Generator */}
+      <AIPromptGenerator
+        onGenerate={handleAIGenerate}
+        placeholder="Describe the pattern you want..."
+        label="Generate Pattern with AI"
+      />
+
       <h3 className="text-lg font-semibold mb-3">Select Pattern</h3>
       <div className="flex justify-around mb-4">
         <button

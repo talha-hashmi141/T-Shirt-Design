@@ -1,4 +1,5 @@
 import React from 'react';
+import AIPromptGenerator from './AIPromptGenerator';
 
 const LogoMenu = ({
   logoPosition,
@@ -11,10 +12,23 @@ const LogoMenu = ({
   selectedLogo,
   setSelectedLogo
 }) => {
+  const handleAIGenerate = (imageUrl) => {
+    // Create a texture from the generated image
+    const texture = new THREE.TextureLoader().load(imageUrl);
+    setSelectedLogo(texture);
+  };
+
   return (
-    <div className="absolute top-28 right-5 z-10 p-5 bg-gray-100/60 rounded-lg w-96 shadow-lg">
+    <div className="absolute top-16 right-5 z-10 p-5 bg-gray-100/60 rounded-lg w-96 shadow-lg">
       <h3 className="text-lg font-semibold mb-3">Logo Settings</h3>
       
+      {/* AI Logo Generator */}
+      <AIPromptGenerator
+        onGenerate={handleAIGenerate}
+        placeholder="Describe the logo you want..."
+        label="Generate Logo with AI"
+      />
+
       {/* Logo Upload */}
       <div className="mb-4">
         <h4 className="text-md font-semibold mb-2">Upload Logo</h4>
